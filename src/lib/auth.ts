@@ -20,6 +20,6 @@ export const auth = betterAuth({
   }),
   plugins: [nextCookies()],
   session: {
-    expiresIn: 60 * 60 * 24 * 7,
+    expiresIn: 60 * 60 * 24 * 7, // 7 días
   },
 });
