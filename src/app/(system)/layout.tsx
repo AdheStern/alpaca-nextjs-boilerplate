@@ -16,7 +16,7 @@ export default function AlpacaLayout({
         <div className="flex flex-1">
           <AppSidebar />
           <SidebarInset>
-            <div className="flex flex-1 flex-col">{children}</div>
+            <div className="flex flex-1 flex-col p-4">{children}</div>
           </SidebarInset>
         </div>
       </SidebarProvider>
