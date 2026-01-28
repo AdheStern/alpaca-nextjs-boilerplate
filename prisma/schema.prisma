@@ -7,52 +7,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ===============================================
-// 1. AUTHENTICATION MODELS (better-auth - DO NOT MODIFY)
-// ===============================================
+// ============================================
+// MODELOS BASE BETTER AUTH
+// ============================================
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified Boolean   @default(false)
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean
   image         String?
-  password      String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  phone         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  
+  // Extensiones para administración
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
 
-  accounts Account[]
-  sessions Session[]
+  
+  role          String    @default("USER")
+  status        String    @default("ACTIVE")
+  departmentId  String?
+  managerId     String?      // Auto-referencia para jerarquía
+  
+  // Relaciones Better Auth
+  sessions      Session[]
+  accounts      Account[]
+  
+  // Relaciones organizacionales
+  department    Department?        @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: SetNull)
+  manager       User?              @relation("ManagerSubordinates", fields: [managerId], references: [id], onDelete: SetNull)
+  subordinates  User[]             @relation("ManagerSubordinates")
+  
+  // Relaciones con organizaciones
+  organizationMembers OrganizationMember[]
+  organizationInvitations OrganizationInvitation[]
 
-  // relaciones extendidas
-  profile        UserProfile?
-  memberships    OrganizationMember[]
-  subscriptions  Subscription?
-  dependencies   UserDependency[] @relation("UserDependsOn")
-  dependents     UserDependency[] @relation("UserIsDependedOn")
-
-  @@map("user") 
-  teamMembers TeamMember[]
-  organizations Organization[]
-  activationRedemptions ActivationRedemption[]
+  @@unique([email])
+  @@index([departmentId])
+  @@index([managerId])
+  @@index([role])
+  @@index([status])
+  @@map("user")
 }
 
 model Session {
-  id        String   @id @default(cuid())
+  id        String   @id
   expiresAt DateTime
-  token     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
   ipAddress String?
   userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("session") 
+  @@unique([token])
+  @@map("session")
 }
 
 model Account {
-  id                    String    @id @default(cuid())
+  id                    String    @id
   accountId             String
   providerId            String
   userId                String
@@ -64,167 +81,115 @@ model Account {
   refreshTokenExpiresAt DateTime?
   scope                 String?
   password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  createdAt             DateTime
+  updatedAt             DateTime
 
-  @@unique([accountId, providerId])
   @@map("account")
 }
 
 model Verification {
-  id         String    @id @default(cuid())
+  id         String    @id
   identifier String
-  value      String    @unique
+  value      String
   expiresAt  DateTime
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  createdAt  DateTime?
+  updatedAt  DateTime?
 
   @@map("verification")
 }
 
-//
-// =================================================
-// 2. PROFILE, ROLES AND USER TYPE (IDENTITY)
-// =================================================
-//
-
-model UserProfile {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  role      GlobalRole @default(USER)
-  isActive  Boolean    @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("user_profile")
-}
-
-enum GlobalRole {
-  USER
-  ADMIN
-  SUPERADMIN
-  SUPPORT
-}
-
-//
-// =================================================
-// 3. PLANS, LEVELS AND SUBSCRIPTION
-// =================================================
-//
-
-model Subscription {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  plan      PlanType
-  status    SubscriptionStatus
-
-  startsAt  DateTime
-  endsAt    DateTime?
-
-  isTrial   Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  activationCodes ActivationRedemption[]
-
-  @@map("subscription")
-}
-
-enum PlanType {
-  FREE
-  PREMIUM
-  ENTERPRISE
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  CANCELED
-  PAUSED
-}
-
-//
-// =================================================
-// 4. ACTIVATION CODES / LICENSES
-// =================================================
-//
-
-model ActivationCode {
-  id           String   @id @default(cuid())
-  code         String   @unique
-  plan         PlanType
-  durationDays Int?     // null = permanent
-
-  maxUses      Int?
-  usedCount    Int      @default(0)
-
-  expiresAt    DateTime?
-  isActive     Boolean  @default(true)
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  redemptions  ActivationRedemption[]
-
-  @@map("activation_code")
-}
-
-model ActivationRedemption {
-  id              String   @id @default(cuid())
-  activationCodeId String
-  userId          String
-  subscriptionId  String?
-
-  activationCode ActivationCode @relation(fields: [activationCodeId], references: [id])
-  user           User           @relation(fields: [userId], references: [id])
-  subscription   Subscription?  @relation(fields: [subscriptionId], references: [id])
-
-  redeemedAt DateTime @default(now())
-
-  @@unique([activationCodeId, userId])
-  @@map("activation_redemption")
-}
-
-//
-// =================================================
-// 5. ORGANIZATIONS, TEAMS AND GROUPS
-// =================================================
-//
+// ============================================
+// MODELOS DE ORGANIZACIÓN (Organization Plugin)
+// ============================================
 
 model Organization {
-  id        String   @id @default(cuid())
+  id        String   @id
   name      String
-  ownerId   String
-  owner     User     @relation(fields: [ownerId], references: [id])
-
+  slug      String   @unique
+  logo      String?
+  metadata  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members   OrganizationMember[]
-  teams     Team[]
+  members      OrganizationMember[]
+  invitations  OrganizationInvitation[]
 
   @@map("organization")
 }
 
 model OrganizationMember {
-  id             String   @id @default(cuid())
+  id             String       @id
   organizationId String
   userId         String
-  role           OrgRole
+  role           OrgRole      @default(MEMBER)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  user         User         @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
   @@map("organization_member")
+}
+
+model OrganizationInvitation {
+  id             String           @id
+  organizationId String
+  email          String
+  role           OrgRole          @default(MEMBER)
+  status         InvitationStatus @default(PENDING)
+  inviterId      String
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inviter        User             @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+  @@index([email])
+  @@index([status])
+  @@map("organization_invitation")
+}
+
+// ============================================
+// MODELOS PERSONALIZADOS
+// ============================================
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  parentId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent      Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Department[] @relation("DepartmentHierarchy")
+  users       User[]       @relation("UserDepartment")
+
+  @@index([parentId])
+  @@map("department")
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  USER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
 }
 
 enum OrgRole {
@@ -233,54 +198,9 @@ enum OrgRole {
   MEMBER
 }
 
-model Team {
-  id             String   @id @default(cuid())
-  name           String
-  organizationId String
-
-  organization Organization @relation(fields: [organizationId], references: [id])
-  members       TeamMember[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("team")
-}
-
-model TeamMember {
-  id      String   @id @default(cuid())
-  teamId  String
-  userId  String
-  role    TeamRole
-
-  team    Team @relation(fields: [teamId], references: [id])
-  user    User @relation(fields: [userId], references: [id])
-
-  @@unique([teamId, userId])
-  @@map("team_member")
-}
-
-enum TeamRole {
-  LEAD
-  MEMBER
-}
-
-//
-// =================================================
-// 6. DEPENDENCIES / HIERARCHY AMONG USERS
-// =================================================
-//
-
-model UserDependency {
-  id            String   @id @default(cuid())
-  dependsOnId   String
-  dependentId   String
-
-  dependsOn     User @relation("UserDependsOn", fields: [dependsOnId], references: [id])
-  dependent     User @relation("UserIsDependedOn", fields: [dependentId], references: [id])
-
-  createdAt     DateTime @default(now())
-
-  @@unique([dependsOnId, dependentId])
-  @@map("user_dependency")
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
 }
