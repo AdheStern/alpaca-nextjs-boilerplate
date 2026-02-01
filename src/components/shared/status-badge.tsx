@@ -1,11 +1,12 @@
 // src/components/shared/status-badge.tsx
 
-import { UserStatus } from "@prisma/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
+type UserStatus = "ACTIVE" | "INACTIVE" | "SUSPENDED";
+
 interface StatusBadgeProps {
-  status: UserStatus;
+  status: UserStatus | string;
   className?: string;
 }
 
@@ -13,22 +14,22 @@ const statusConfig: Record<
   UserStatus,
   { label: string; variant: "default" | "secondary" | "destructive" }
 > = {
-  [UserStatus.ACTIVE]: {
+  ACTIVE: {
     label: "Activo",
     variant: "default",
   },
-  [UserStatus.INACTIVE]: {
+  INACTIVE: {
     label: "Inactivo",
     variant: "secondary",
   },
-  [UserStatus.SUSPENDED]: {
+  SUSPENDED: {
     label: "Suspendido",
     variant: "destructive",
   },
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
-  const config = statusConfig[status];
+  const config = statusConfig[status as UserStatus];
 
   if (!config) {
     return null;

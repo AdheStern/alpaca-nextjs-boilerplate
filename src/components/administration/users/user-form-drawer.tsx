@@ -3,7 +3,6 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UserRole, UserStatus } from "@prisma/client";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarIcon, Loader2 } from "lucide-react";
@@ -57,8 +56,8 @@ const userFormSchema = z.object({
   password: z.string().optional(),
   phone: z.string().optional(),
   birthDate: z.date().optional(),
-  role: z.nativeEnum(UserRole),
-  status: z.nativeEnum(UserStatus),
+  role: z.enum(["SUPER_ADMIN", "ADMIN", "MANAGER", "SUPERVISOR", "USER"]),
+  status: z.enum(["ACTIVE", "INACTIVE", "SUSPENDED"]),
   departmentId: z.string().optional(),
   managerId: z.string().optional(),
 });
@@ -93,8 +92,8 @@ export function UserFormDrawer({
       password: "",
       phone: "",
       birthDate: undefined,
-      role: UserRole.USER,
-      status: UserStatus.ACTIVE,
+      role: "USER",
+      status: "ACTIVE",
       departmentId: "",
       managerId: "",
     },
@@ -108,8 +107,13 @@ export function UserFormDrawer({
           email: user.email,
           phone: user.phone ?? "",
           birthDate: user.birthDate ? new Date(user.birthDate) : undefined,
-          role: user.role as UserRole,
-          status: user.status as UserStatus,
+          role: user.role as
+            | "SUPER_ADMIN"
+            | "ADMIN"
+            | "MANAGER"
+            | "SUPERVISOR"
+            | "USER",
+          status: user.status as "ACTIVE" | "INACTIVE" | "SUSPENDED",
           departmentId: user.department?.id ?? "",
           managerId: user.manager?.id ?? "",
         });
@@ -120,8 +124,8 @@ export function UserFormDrawer({
           password: "",
           phone: "",
           birthDate: undefined,
-          role: UserRole.USER,
-          status: UserStatus.ACTIVE,
+          role: "USER",
+          status: "ACTIVE",
           departmentId: "",
           managerId: "",
         });
@@ -186,7 +190,7 @@ export function UserFormDrawer({
       }
     } catch (error) {
       toast.error("Ocurrió un error inesperado");
-      console.log(error);
+      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -344,15 +348,11 @@ export function UserFormDrawer({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={UserRole.USER}>Usuario</SelectItem>
-                      <SelectItem value={UserRole.SUPERVISOR}>
-                        Supervisor
-                      </SelectItem>
-                      <SelectItem value={UserRole.MANAGER}>Manager</SelectItem>
-                      <SelectItem value={UserRole.ADMIN}>Admin</SelectItem>
-                      <SelectItem value={UserRole.SUPER_ADMIN}>
-                        Super Admin
-                      </SelectItem>
+                      <SelectItem value="USER">Usuario</SelectItem>
+                      <SelectItem value="SUPERVISOR">Supervisor</SelectItem>
+                      <SelectItem value="MANAGER">Manager</SelectItem>
+                      <SelectItem value="ADMIN">Admin</SelectItem>
+                      <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -373,13 +373,9 @@ export function UserFormDrawer({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value={UserStatus.ACTIVE}>Activo</SelectItem>
-                      <SelectItem value={UserStatus.INACTIVE}>
-                        Inactivo
-                      </SelectItem>
-                      <SelectItem value={UserStatus.SUSPENDED}>
-                        Suspendido
-                      </SelectItem>
+                      <SelectItem value="ACTIVE">Activo</SelectItem>
+                      <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                      <SelectItem value="SUSPENDED">Suspendido</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

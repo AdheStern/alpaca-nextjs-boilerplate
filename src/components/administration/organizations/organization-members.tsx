@@ -2,7 +2,6 @@
 
 "use client";
 
-import { OrgRole } from "@prisma/client";
 import { Loader2, MoreHorizontal, Trash2, UserCog } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -54,7 +53,9 @@ export function OrganizationMembers({
     useState<OrganizationMemberWithUser | null>(null);
   const [memberToChangeRole, setMemberToChangeRole] =
     useState<OrganizationMemberWithUser | null>(null);
-  const [newRole, setNewRole] = useState<OrgRole | null>(null);
+  const [newRole, setNewRole] = useState<"OWNER" | "ADMIN" | "MEMBER" | null>(
+    null,
+  );
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,7 +67,7 @@ export function OrganizationMembers({
 
   const handleChangeRole = (member: OrganizationMemberWithUser) => {
     setMemberToChangeRole(member);
-    setNewRole(member.role as OrgRole);
+    setNewRole(member.role as "OWNER" | "ADMIN" | "MEMBER");
     setIsRoleDialogOpen(true);
   };
 
@@ -155,9 +156,9 @@ export function OrganizationMembers({
               </div>
 
               <div className="flex items-center gap-3">
-                <RoleBadge role={member.role as OrgRole} />
+                <RoleBadge role={member.role as "OWNER" | "ADMIN" | "MEMBER"} />
 
-                {member.role !== OrgRole.OWNER && (
+                {member.role !== "OWNER" && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" className="h-8 w-8 p-0">
@@ -213,14 +214,16 @@ export function OrganizationMembers({
           <div className="py-4">
             <Select
               value={newRole ?? undefined}
-              onValueChange={(value) => setNewRole(value as OrgRole)}
+              onValueChange={(value) =>
+                setNewRole(value as "OWNER" | "ADMIN" | "MEMBER")
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona un rol" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={OrgRole.ADMIN}>Admin</SelectItem>
-                <SelectItem value={OrgRole.MEMBER}>Miembro</SelectItem>
+                <SelectItem value="ADMIN">Admin</SelectItem>
+                <SelectItem value="MEMBER">Miembro</SelectItem>
               </SelectContent>
             </Select>
           </div>

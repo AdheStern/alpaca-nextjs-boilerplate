@@ -2,7 +2,6 @@
 
 "use client";
 
-import type { UserRole, UserStatus } from "@prisma/client";
 import type { ColumnDef } from "@tanstack/react-table";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -100,14 +99,12 @@ export const createUserColumns = (
   {
     accessorKey: "role",
     header: "Rol",
-    cell: ({ row }) => <RoleBadge role={row.original.role as UserRole} />,
+    cell: ({ row }) => <RoleBadge role={row.original.role} />,
   },
   {
     accessorKey: "status",
     header: "Estado",
-    cell: ({ row }) => (
-      <StatusBadge status={row.original.status as UserStatus} />
-    ),
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
   {
     accessorKey: "department",

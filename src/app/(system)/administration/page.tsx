@@ -1,17 +1,12 @@
 // src/app/(system)/administration/page.tsx
 
-import { UserRole } from "@prisma/client";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { AdministrationContainer } from "@/components/administration/administration-container";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-const ALLOWED_ROLES = [
-  UserRole.SUPER_ADMIN,
-  UserRole.ADMIN,
-  UserRole.MANAGER,
-] as const;
+const ALLOWED_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"] as const;
 
 export default async function AdministrationPage() {
   const session = await auth.api.getSession({
